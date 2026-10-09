@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>LeylaTech Client & Project Portal</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="dashboard-container">
+    <!-- Sidebar Navigation -->
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="brand-icon">L</div>
+        <h2>LeylaTech</h2>
+      </div>
+      <nav class="nav-menu">
+        <a href="#" class="nav-item active">
+          <span>Dashboard</span>
+        </a>
+        <a href="#" class="nav-item">
+          <span>Clients</span>
+        </a>
+        <a href="#" class="nav-item">
+          <span>Projects</span>
+        </a>
+        <a href="#" class="nav-item">
+          <span>Settings</span>
+        </a>
+      </nav>
+    </aside>
+
+    <!-- Main Content Area -->
+    <main class="main-content">
+      <!-- Header Bar -->
+      <header class="header">
+        <div class="search-bar">
+          <input type="text" placeholder="Search clients, projects, or status..." />
+        </div>
+        <div class="user-profile">
+          <div class="avatar">LT</div>
+          <span class="user-name">Leyla T.</span>
+        </div>
+      </header>
+
+      <!-- Dashboard View -->
+      <div class="content-body">
+        <!-- Stat Cards Grid -->
+        <section class="stats-grid">
+          <div class="stat-card">
+            <span class="stat-title">Total Clients</span>
+            <p class="stat-value">12</p>
+            <span class="stat-change positive">+2 this month</span>
+          </div>
+          <div class="stat-card">
+            <span class="stat-title">Active Projects</span>
+            <p class="stat-value">8</p>
+            <span class="stat-change positive">4 in progress</span>
+          </div>
+          <div class="stat-card">
+            <span class="stat-title">Pending Tickets</span>
+            <p class="stat-value">3</p>
+            <span class="stat-change negative">Needs action</span>
+          </div>
+        </section>
+
+        <!-- Add Client Form Section -->
+        <section class="form-section">
+          <h3>Add New Client Record</h3>
+          <form id="add-client-form" class="client-form">
+            <div class="form-group">
+              <label for="engineerName">Client Name</label>
+              <input type="text" id="engineerName" placeholder="e.g. Sarah Jenkins" required />
+            </div>
+            <div class="form-group">
+              <label for="clientCompany">Company Name</label>
+              <input type="text" id="clientCompany" placeholder="e.g. Apex Global" />
+            </div>
+            <button type="submit" class="btn-primary">Add Client</button>
+          </form>
+        </section>
+
+        <!-- Client Records Section -->
+        <section class="table-section">
+          <div class="section-header">
+            <h3>Client Directory</h3>
+          </div>
+          <div id="engineer-list" class="cards-grid">
+            <!-- Sample Static Cards (JS will render these dynamically later) -->
+            <div class="client-card">
+              <div class="card-header">
+                <h4>Acme Corp</h4>
+                <span class="badge badge-active">Active</span>
+              </div>
+              <p class="company-sub">Contact: Alex Mercer</p>
+              <p class="role-sub">Frontend Modernization</p>
+              <button class="btn-delete">Delete</button>
+            </div>
+
+            <div class="client-card">
+              <div class="card-header">
+                <h4>TechStart LLC</h4>
+                <span class="badge badge-pending">Pending</span>
+              </div>
+              <p class="company-sub">Contact: John Doe</p>
+              <p class="role-sub">API Integration</p>
+              <button class="btn-delete">Delete</button>
+            </div>
+          </div>
+        </section>
+      </div>
+    </main>
+  </div>
+  <script type="module" src="./js/app.js"></script>
+</body>
+</html>
