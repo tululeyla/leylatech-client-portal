@@ -7,18 +7,33 @@ const companyInput = document.getElementById("clientCompany");
 const clientList = document.getElementById("engineer-list");
 const searchInput = document.querySelector(".search-bar input");
 
-// State: Local cache of retrieved clients
 let allClients = [];
+const STORAGE_KEY = "leylatech_clients_v1";
 
-// 1. Initial GET Load
+// 1. Load Initial Data (Check LocalStorage first, fallback to API)
 document.addEventListener("DOMContentLoaded", async () => {
   try {
-    allClients = await getClients();
+    const savedClients = localStorage.getItem(STORAGE_KEY);
+    
+    if (savedClients) {
+      // Load from browser memory if available
+      allClients = JSON.parse(savedClients);
+    } else {
+      // Otherwise fetch from API and save to localStorage
+      allClients = await getClients();
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(allClients));
+    }
+    
     renderClientList(allClients);
   } catch (error) {
     console.error("Failed to load clients:", error.message);
   }
 });
+
+// Helper function to sync local state to localStorage
+function saveToLocalStorage() {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(allClients));
+}
 
 // 2. Real-Time Search Filter Logic
 if (searchInput) {
@@ -35,7 +50,7 @@ if (searchInput) {
   });
 }
 
-// 3. Create Client (POST)
+// 3. Create Client (POST & LocalStorage Save)
 form.addEventListener("submit", async (e) => {
   e.preventDefault();
   const name = nameInput.value.trim();
@@ -44,10 +59,15 @@ form.addEventListener("submit", async (e) => {
   if (!name) return;
 
   try {
+    // Optional: Call API (simulated)
     const newClient = await createClient({ name, company: { name: company }, status: "Active" });
     
-    // Update local state & UI
+    // Ensure unique ID if offline/local
+    newClient.id = Date.now(); 
+
     allClients.unshift(newClient);
+    saveToLocalStorage(); // Save to browser storage
+    
     renderCard(newClient);
     form.reset();
   } catch (error) {
@@ -67,12 +87,15 @@ clientList.addEventListener("click", async (e) => {
 
     try {
       await deleteClient(clientId);
+      
       allClients = allClients.filter(c => String(c.id) !== String(clientId));
+      saveToLocalStorage(); // Update storage
       removeCardFromDOM(clientId);
     } catch (error) {
-      alert("Could not delete client.");
-      target.disabled = false;
-      target.textContent = "Delete";
+      // Even if mock API fails, remove locally for smooth UX
+      allClients = allClients.filter(c => String(c.id) !== String(clientId));
+      saveToLocalStorage();
+      removeCardFromDOM(clientId);
     }
   }
 
@@ -85,9 +108,11 @@ clientList.addEventListener("click", async (e) => {
     try {
       await updateClientStatus(clientId, nextStatus);
       
-      // Update local array state
       const clientObj = allClients.find(c => String(c.id) === String(clientId));
-      if (clientObj) clientObj.status = nextStatus;
+      if (clientObj) {
+        clientObj.status = nextStatus;
+        saveToLocalStorage(); // Update storage
+      }
 
       updateBadgeUI(clientId, nextStatus);
     } catch (error) {
