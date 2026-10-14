@@ -10,32 +10,53 @@ const searchInput = document.querySelector(".search-bar input");
 let allClients = [];
 const STORAGE_KEY = "leylatech_clients_v1";
 
-// 1. Load Initial Data (Check LocalStorage first, fallback to API)
+// Helper function to safely write state to LocalStorage
+function saveToLocalStorage() {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(allClients));
+  } catch (error) {
+    console.error("Failed to write to localStorage:", error.message);
+  }
+}
+
+// 1. Safe Initialization with Error Boundary Logic
 document.addEventListener("DOMContentLoaded", async () => {
   try {
     const savedClients = localStorage.getItem(STORAGE_KEY);
     
     if (savedClients) {
-      // Load from browser memory if available
-      allClients = JSON.parse(savedClients);
+      try {
+        // Safe parsing: If JSON is corrupt, this will throw to catch block
+        allClients = JSON.parse(savedClients);
+      } catch (parseError) {
+        console.warn("Corrupted JSON in localStorage. Resetting cache from API...", parseError.message);
+        localStorage.removeItem(STORAGE_KEY);
+        allClients = await getClients();
+        saveToLocalStorage();
+      }
     } else {
-      // Otherwise fetch from API and save to localStorage
+      // Fetch from API if no local storage exists
       allClients = await getClients();
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(allClients));
+      saveToLocalStorage();
     }
     
     renderClientList(allClients);
   } catch (error) {
-    console.error("Failed to load clients:", error.message);
+    console.error("Critical API or Storage Error:", error.message);
+    
+    // UI Graceful Fallback: Render error banner instead of a blank screen
+    if (clientList) {
+      clientList.innerHTML = `
+        <div class="error-banner" style="grid-column: 1/-1; padding: 20px; background: #fee2e2; color: #991b1b; border-radius: 8px; text-align: center;">
+          <p style="font-weight: bold; margin-bottom: 4px;">⚠️ Unable to sync client dashboard</p>
+          <p style="font-size: 0.9rem;">Please check your internet connection or try again later.</p>
+        </div>
+      `;
+    }
   }
 });
 
-// Helper function to sync local state to localStorage
-function saveToLocalStorage() {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(allClients));
-}
-
-// 2. Real-Time Search Filter Logic
+// 2. Real-Time Search Filter
 if (searchInput) {
   searchInput.addEventListener("input", (e) => {
     const query = e.target.value.toLowerCase().trim();
@@ -50,73 +71,70 @@ if (searchInput) {
   });
 }
 
-// 3. Create Client (POST & LocalStorage Save)
-form.addEventListener("submit", async (e) => {
-  e.preventDefault();
-  const name = nameInput.value.trim();
-  const company = companyInput.value.trim() || "LeylaTech Partner";
+// 3. Create Client (POST & Resilient Save)
+if (form) {
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const name = nameInput.value.trim();
+    const company = companyInput.value.trim() || "LeylaTech Partner";
 
-  if (!name) return;
+    if (!name) return;
 
-  try {
-    // Optional: Call API (simulated)
-    const newClient = await createClient({ name, company: { name: company }, status: "Active" });
-    
-    // Ensure unique ID if offline/local
-    newClient.id = Date.now(); 
+    try {
+      const newClient = await createClient({ name, company: { name: company }, status: "Active" });
+      newClient.id = Date.now(); // Ensure unique ID locally
 
-    allClients.unshift(newClient);
-    saveToLocalStorage(); // Save to browser storage
-    
-    renderCard(newClient);
-    form.reset();
-  } catch (error) {
-    alert("Could not add client.");
-  }
-});
+      allClients.unshift(newClient);
+      saveToLocalStorage();
+      
+      renderCard(newClient);
+      form.reset();
+    } catch (error) {
+      alert("Network issue: Could not persist client to server, but saved locally.");
+    }
+  });
+}
 
 // 4. Event Delegation for DELETE and Status Toggle
-clientList.addEventListener("click", async (e) => {
-  const target = e.target;
+if (clientList) {
+  clientList.addEventListener("click", async (e) => {
+    const target = e.target;
 
-  // Handle DELETE Click
-  if (target.classList.contains("btn-delete")) {
-    const clientId = target.getAttribute("data-id");
-    target.disabled = true;
-    target.textContent = "Deleting...";
+    // Handle DELETE
+    if (target.classList.contains("btn-delete")) {
+      const clientId = target.getAttribute("data-id");
+      target.disabled = true;
+      target.textContent = "Deleting...";
 
-    try {
-      await deleteClient(clientId);
-      
-      allClients = allClients.filter(c => String(c.id) !== String(clientId));
-      saveToLocalStorage(); // Update storage
-      removeCardFromDOM(clientId);
-    } catch (error) {
-      // Even if mock API fails, remove locally for smooth UX
-      allClients = allClients.filter(c => String(c.id) !== String(clientId));
-      saveToLocalStorage();
-      removeCardFromDOM(clientId);
-    }
-  }
-
-  // Handle Status Badge Toggle Click
-  if (target.classList.contains("status-toggle")) {
-    const clientId = target.getAttribute("data-id");
-    const currentStatus = target.textContent.trim();
-    const nextStatus = currentStatus === "Active" ? "Pending" : "Active";
-
-    try {
-      await updateClientStatus(clientId, nextStatus);
-      
-      const clientObj = allClients.find(c => String(c.id) === String(clientId));
-      if (clientObj) {
-        clientObj.status = nextStatus;
-        saveToLocalStorage(); // Update storage
+      try {
+        await deleteClient(clientId);
+      } catch (error) {
+        console.warn("API delete failed, proceeding with local DOM removal...");
+      } finally {
+        allClients = allClients.filter(c => String(c.id) !== String(clientId));
+        saveToLocalStorage();
+        removeCardFromDOM(clientId);
       }
-
-      updateBadgeUI(clientId, nextStatus);
-    } catch (error) {
-      alert("Could not update status.");
     }
-  }
-});
+
+    // Handle Status Toggle
+    if (target.classList.contains("status-toggle")) {
+      const clientId = target.getAttribute("data-id");
+      const currentStatus = target.textContent.trim();
+      const nextStatus = currentStatus === "Active" ? "Pending" : "Active";
+
+      try {
+        await updateClientStatus(clientId, nextStatus);
+      } catch (error) {
+        console.warn("API status update failed, saving locally...");
+      } finally {
+        const clientObj = allClients.find(c => String(c.id) === String(clientId));
+        if (clientObj) {
+          clientObj.status = nextStatus;
+          saveToLocalStorage();
+        }
+        updateBadgeUI(clientId, nextStatus);
+      }
+    }
+  });
+}
