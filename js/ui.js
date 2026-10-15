@@ -43,3 +43,24 @@ export function renderClientList(clients) {
   }
   clients.forEach((client) => renderCard(client));
 }
+// 1. Loading State Helper
+export function showLoading(container) {
+  if (!container) return;
+  container.innerHTML = `
+    <div class="loading-state" style="grid-column: 1/-1; text-align: center; padding: 40px; color: #64748b; font-weight: 500;">
+      <p style="font-size: 1.1rem; margin-bottom: 4px;">🔄 Loading client dashboard...</p>
+      <p style="font-size: 0.85rem;">Please wait while we sync with the server.</p>
+    </div>
+  `;
+}
+
+// 2. Empty Search Fallback Helper
+export function renderEmptyState(container, message = "No items found.") {
+  if (!container) return;
+  container.innerHTML = `
+    <div class="empty-state" style="grid-column: 1/-1; text-align: center; padding: 40px; color: #64748b;">
+      <p style="font-size: 1.1rem; font-weight: 600; margin-bottom: 4px;">📭 ${message}</p>
+      <p style="font-size: 0.9rem;">Try searching for a different keyword or adding a new record.</p>
+    </div>
+  `;
+}

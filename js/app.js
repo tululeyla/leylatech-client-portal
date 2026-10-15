@@ -1,5 +1,5 @@
 import { getClients, createClient, deleteClient, updateClientStatus } from "./api.js";
-import { renderCard, renderClientList, removeCardFromDOM, updateBadgeUI } from "./ui.js";
+import { renderCard, renderClientList, removeCardFromDOM, updateBadgeUI, showLoading, renderEmptyState } from "./ui.js";
 
 const form = document.getElementById("add-client-form");
 const nameInput = document.getElementById("engineerName");
@@ -19,14 +19,16 @@ function saveToLocalStorage() {
   }
 }
 
-// 1. Safe Initialization with Error Boundary Logic
+// 1. Safe Initialization with Loading State & Error Boundary
 document.addEventListener("DOMContentLoaded", async () => {
+  // Show loading spinner/banner immediately before async operations
+  showLoading(clientList);
+
   try {
     const savedClients = localStorage.getItem(STORAGE_KEY);
     
     if (savedClients) {
       try {
-        // Safe parsing: If JSON is corrupt, this will throw to catch block
         allClients = JSON.parse(savedClients);
       } catch (parseError) {
         console.warn("Corrupted JSON in localStorage. Resetting cache from API...", parseError.message);
@@ -35,16 +37,20 @@ document.addEventListener("DOMContentLoaded", async () => {
         saveToLocalStorage();
       }
     } else {
-      // Fetch from API if no local storage exists
       allClients = await getClients();
       saveToLocalStorage();
     }
     
-    renderClientList(allClients);
+    // Check if initial data is completely empty
+    if (allClients.length === 0) {
+      renderEmptyState(clientList, "No clients found in the database.");
+    } else {
+      renderClientList(allClients);
+    }
+
   } catch (error) {
     console.error("Critical API or Storage Error:", error.message);
     
-    // UI Graceful Fallback: Render error banner instead of a blank screen
     if (clientList) {
       clientList.innerHTML = `
         <div class="error-banner" style="grid-column: 1/-1; padding: 20px; background: #fee2e2; color: #991b1b; border-radius: 8px; text-align: center;">
@@ -56,7 +62,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   }
 });
 
-// 2. Real-Time Search Filter
+// 2. Real-Time Search Filter with Empty State Handling
 if (searchInput) {
   searchInput.addEventListener("input", (e) => {
     const query = e.target.value.toLowerCase().trim();
@@ -67,7 +73,11 @@ if (searchInput) {
       return nameMatch || companyMatch;
     });
 
-    renderClientList(filteredClients);
+    if (filteredClients.length === 0) {
+      renderEmptyState(clientList, `No clients match "${query}"`);
+    } else {
+      renderClientList(filteredClients);
+    }
   });
 }
 
@@ -87,7 +97,7 @@ if (form) {
       allClients.unshift(newClient);
       saveToLocalStorage();
       
-      renderCard(newClient);
+      renderClientList(allClients); // Re-render full list including new client
       form.reset();
     } catch (error) {
       alert("Network issue: Could not persist client to server, but saved locally.");
@@ -113,7 +123,12 @@ if (clientList) {
       } finally {
         allClients = allClients.filter(c => String(c.id) !== String(clientId));
         saveToLocalStorage();
-        removeCardFromDOM(clientId);
+        
+        if (allClients.length === 0) {
+          renderEmptyState(clientList, "All clients have been removed.");
+        } else {
+          removeCardFromDOM(clientId);
+        }
       }
     }
 
