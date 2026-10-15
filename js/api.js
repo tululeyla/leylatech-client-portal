@@ -16,7 +16,6 @@ export async function createClient(clientData) {
   return await response.json();
 }
 
-// 1. DELETE Request
 export async function deleteClient(id) {
   const response = await fetch(`${BASE_URL}/${id}`, {
     method: "DELETE",
@@ -24,7 +23,6 @@ export async function deleteClient(id) {
   if (!response.ok) throw new Error(`Delete error: ${response.status}`);
 }
 
-// 2. PATCH Request (Update status)
 export async function updateClientStatus(id, newStatus) {
   const response = await fetch(`${BASE_URL}/${id}`, {
     method: "PATCH",

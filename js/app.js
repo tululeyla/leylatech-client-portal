@@ -10,7 +10,6 @@ const searchInput = document.querySelector(".search-bar input");
 let allClients = [];
 const STORAGE_KEY = "leylatech_clients_v1";
 
-// Helper function to safely write state to LocalStorage
 function saveToLocalStorage() {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(allClients));
@@ -21,7 +20,6 @@ function saveToLocalStorage() {
 
 // 1. Safe Initialization with Loading State & Error Boundary
 document.addEventListener("DOMContentLoaded", async () => {
-  // Show loading spinner/banner immediately before async operations
   showLoading(clientList);
 
   try {
@@ -41,7 +39,6 @@ document.addEventListener("DOMContentLoaded", async () => {
       saveToLocalStorage();
     }
     
-    // Check if initial data is completely empty
     if (allClients.length === 0) {
       renderEmptyState(clientList, "No clients found in the database.");
     } else {
@@ -92,12 +89,12 @@ if (form) {
 
     try {
       const newClient = await createClient({ name, company: { name: company }, status: "Active" });
-      newClient.id = Date.now(); // Ensure unique ID locally
+      newClient.id = Date.now();
 
       allClients.unshift(newClient);
       saveToLocalStorage();
       
-      renderClientList(allClients); // Re-render full list including new client
+      renderClientList(allClients);
       form.reset();
     } catch (error) {
       alert("Network issue: Could not persist client to server, but saved locally.");
@@ -110,7 +107,6 @@ if (clientList) {
   clientList.addEventListener("click", async (e) => {
     const target = e.target;
 
-    // Handle DELETE
     if (target.classList.contains("btn-delete")) {
       const clientId = target.getAttribute("data-id");
       target.disabled = true;
@@ -132,7 +128,6 @@ if (clientList) {
       }
     }
 
-    // Handle Status Toggle
     if (target.classList.contains("status-toggle")) {
       const clientId = target.getAttribute("data-id");
       const currentStatus = target.textContent.trim();

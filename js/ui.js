@@ -38,12 +38,12 @@ export function updateBadgeUI(id, newStatus) {
 export function renderClientList(clients) {
   clientList.innerHTML = "";
   if (clients.length === 0) {
-    clientList.innerHTML = `<p class="empty-msg">No active clients found.</p>`;
+    renderEmptyState(clientList, "No active clients found.");
     return;
   }
   clients.forEach((client) => renderCard(client));
 }
-// 1. Loading State Helper
+
 export function showLoading(container) {
   if (!container) return;
   container.innerHTML = `
@@ -54,7 +54,6 @@ export function showLoading(container) {
   `;
 }
 
-// 2. Empty Search Fallback Helper
 export function renderEmptyState(container, message = "No items found.") {
   if (!container) return;
   container.innerHTML = `
